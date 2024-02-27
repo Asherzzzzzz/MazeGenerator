@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Maze Generator</title>
+        
+        <link rel="stylesheet" href="reset.css">
+        <link rel="stylesheet" href="default.css">
+    </head>
+
+    <body>
+        <h1>Maze Generator</h1>
+
+        <canvas id="maze_canvas" height="150px" width="150px"></canvas>
+        <script src="./maze_function.js"></script>
+        <div id="maze_option_all">
+            <h3 id="maze_option_title">Maze Option</h1>
+            <div class="maze_option_block">
+                <label for="height">H:</label><input type="number" id="height" value="31"/>
+                <label for="height">W:</label><input type="number" id="width"/ value="31">
+            </div>
+            <div class="maze_option_block">
+                <label for="height">Unit H:</label><input type="number" id="unit_height" value="15"/>
+                <label for="height">Unit W:</label><input type="number" id="unit_width" value="15"/>
+            </div>
+            <div class="maze_option_block">
+                <label for="maze_generation_mode" class="long_label">Maze generation mode:</label>
+                <select id="maze_generation_mode">
+                    <option value="randomized_dfs">DFS</option>
+                    <option value="randomized_bfs">BFS</option>
+                </select>
+            </div>
+            <div class="maze_option_block">
+                <label for="answer_generation_mode" class="long_label">Answer generation mode:</label>
+                <select id="answer_generation_mode">
+                    <option value="dfs">DFS</option>
+                    <option value="bfs">BFS</option>
+                </select>
+            </div>
+
+            <div class="maze_option_block">
+                <label for="show_generation_process" class="long_label">Show generation process:</label>
+                <input type="checkbox" id="show_generation_process" checked/>
+            </div>
+            <div class="maze_option_block">
+                <label for="process_delay_ms" class="long_label">Process delay(ms):</label>
+                <input type="number" id="process_delay_ms" value="10"/>
+            </div>
+            <div class="maze_option_block">
+                <label for="random_start_position" class="long_label">Random start position:</label>
+                <input type="checkbox" id="random_start_position"/>
+            </div>
+
+            <button class="maze_option_block" onclick="generate_maze_button_down()">generate maze</button>
+            <button id="answer_button" class="maze_option_block" style="display: none;" onclick="answer_button_down(this)">show answer</button>
+        </div>
+        
+    </body>
+</html>
