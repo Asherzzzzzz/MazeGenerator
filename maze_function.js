@@ -61,7 +61,6 @@ async function generate_maze_button_down()
     let unit_height = document.getElementById("unit_height");
     let unit_width = document.getElementById("unit_width");
     maze_generation_mode = document.getElementById("maze_generation_mode").value;
-    answer_generation_mode = document.getElementById("answer_generation_mode").value;
     show_generation_process = document.getElementById("show_generation_process").checked;
     random_start_position = document.getElementById("random_start_position").checked;
     process_delay_ms = document.getElementById("process_delay_ms").value;
@@ -85,6 +84,10 @@ async function generate_maze_button_down()
 
 async function answer_button_down(element)
 {    
+    answer_generation_mode = document.getElementById("answer_generation_mode").value;
+    show_generation_process = document.getElementById("show_generation_process").checked;
+    process_delay_ms = document.getElementById("process_delay_ms").value;
+
     if (element.innerHTML == "show answer")
     {
         element.innerHTML = "hide answer";
@@ -184,7 +187,7 @@ async function generate_maze()
     if (random_start_position)
         start = get_random_unit();
 
-    const randomized_dfs = async() => {
+    const dfs_generate = async() => {
         now = start.clone();
 
         current_maze.table[start.row][start.col] = 1;
@@ -272,7 +275,7 @@ async function generate_maze()
         }
     }
 
-    const randomized_bfs = async () => {
+    const bfs_generate = async () => {
         let available_units = [];
         available_units.push(start);
 
@@ -343,16 +346,128 @@ async function generate_maze()
         }
     }
 
+    const randomly_generate = async () => {
+        let id_table = [];
+
+        for (let i = 0; i < current_maze.height; i ++)
+        {
+            let row = [];
+
+            for (let j = 0; j < current_maze.width; j++)
+            {
+                row.push(i * current_maze.width + j);
+            }
+
+            id_table.push(row);
+        }
+
+        let update_id_table = (a, b) => {
+            if (id_table[b.row][b.col] == id_table[a.row][a.col])
+                return;
+            
+            if (id_table[b.row][b.col] < id_table[a.row][a.col])
+            {
+                let c = a;
+                a = b;
+                b = c;
+            }
+
+            for (let i = 1; i < current_maze.height; i += 2)
+            {
+                for (let j = 1; j < current_maze.width; j += 2)
+                {
+                    if (id_table[i][j] == id_table[a.row][a.col])
+                    {
+                        id_table[i][j] = id_table[b.row][b.col];
+                    }
+                }
+            }
+        }
+
+        let process_counter = 0;
+
+        while (process_counter++ < current_maze.height * current_maze.width)
+        {
+            now = get_random_unit();
+            current_maze.table[now.row][now.col] = 2;
+
+            canUp = now.row != 1 
+                    && id_table[now.row][now.col] != id_table[now.row - 2][now.col];
+
+            canDown = now.row != current_maze.height - 2 
+                      && id_table[now.row][now.col] != id_table[now.row + 2][now.col];
+
+            canLeft = now.col != 1 
+                      && id_table[now.row][now.col] != id_table[now.row][now.col - 2];
+
+            canRight = now.col != current_maze.width - 2 
+                       && id_table[now.row][now.col] != id_table[now.row][now.col + 2];
+
+            isStuck = !(canUp || canDown || canLeft || canRight); 
+
+            if (isStuck)
+            {
+                continue;
+            }
+
+            while (true)
+            {
+                rand = get_random_num(0, 3);
+                if (rand == 0 && canUp)
+                {
+                    current_maze.table[now.row - 1][now.col] = 2;
+                    current_maze.table[now.row - 2][now.col] = 2;
+
+                    update_id_table(now, new Unit(now.row - 2, now.col));
+                    break;
+                }
+                else if (rand == 1 && canDown)
+                {
+                    current_maze.table[now.row + 1][now.col] = 2;
+                    current_maze.table[now.row + 2][now.col] = 2;
+                    
+                    update_id_table(now, new Unit(now.row + 2, now.col));
+                    break;
+                }
+                else if (rand == 2 && canLeft)
+                {
+                    current_maze.table[now.row][now.col - 1] = 2;
+                    current_maze.table[now.row][now.col - 2] = 2;
+                    
+                    update_id_table(now, new Unit(now.row, now.col - 2));
+                    break;
+                }
+                else if (rand == 3 && canRight)
+                {
+                    current_maze.table[now.row][now.col + 1] = 2;
+                    current_maze.table[now.row][now.col + 2] = 2;
+                    
+                    update_id_table(now, new Unit(now.row, now.col + 2));
+                    break;
+                }
+            }
+
+            if (show_generation_process)
+            {
+                draw_maze();
+                await sleep(process_delay_ms);
+            }
+        }
+    }
+
     switch (maze_generation_mode)
     {
-        case "randomized_dfs":
-            await randomized_dfs();
+        case "dfs":
+            await dfs_generate();
             break;
-        case "randomized_bfs":
-            await randomized_bfs();
+        case "bfs":
+            await bfs_generate();
+            break;
+        case "randomly_generate":
+            await randomly_generate();
             break;
         default:
-            await randomized_dfs();
+            await dfs_generate();
     }
 }
 
@@ -360,6 +475,8 @@ async function generate_maze_answer()
 {
     let start = new Unit(1, 1), now = new Unit(), goal = new Unit(current_maze.height - 2, current_maze.width - 2);
     let canUp, canDown, canLeft, canRight, isStuck;
+
+    current_maze.answer_table = [];
 
     for (let i = 0; i < current_maze.table.length; i++)
     {
@@ -382,10 +499,10 @@ async function generate_maze_answer()
             if (current_maze.answer_table[now.row][now.col] == 2)
                 current_maze.answer_table[now.row][now.col] = 4;
 
-            canUp = current_maze.answer_table[now.row - 1][now.col] == 2;
-            canDown = current_maze.answer_table[now.row + 1][now.col] == 2;
-            canLeft = current_maze.answer_table[now.row][now.col - 1] == 2;
-            canRight = current_maze.answer_table[now.row][now.col + 1] == 2;
+            canUp = now.row != 1 && current_maze.answer_table[now.row - 1][now.col] == 2 && current_maze.answer_table[now.row - 2][now.col] == 2;
+            canDown = now.row != current_maze.height - 2 && current_maze.answer_table[now.row + 1][now.col] == 2 && current_maze.answer_table[now.row + 2][now.col] == 2;
+            canLeft = now.col != 1 && current_maze.answer_table[now.row][now.col - 1] == 2 && current_maze.answer_table[now.row][now.col - 2] == 2;
+            canRight = now.col != current_maze.width - 2 && current_maze.answer_table[now.row][now.col + 1] == 2 && current_maze.answer_table[now.row][now.col + 2] == 2;
 
             isStuck = !(canUp || canDown || canLeft || canRight);
 
